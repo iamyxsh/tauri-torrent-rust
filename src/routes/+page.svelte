@@ -10,44 +10,19 @@
     UploadCloud,
     Trash2
   } from 'lucide-svelte';
+  import { invoke } from '@tauri-apps/api/core'
+  import { onMount } from 'svelte'
 
-  interface Torrent {
-    id: number;
-    name: string;
-    progress: number;
-    downloaded: string;
-    total: string;
-    peers: number;
-    eta: string;
-    status: 'downloading' | 'paused';
-    downSpeed?: string;
-    upSpeed?: string;
+  export const torrents = writable<Torrent[]>([]);
+
+  export async function loadTorrents() {
+    const list = await invoke<Torrent[]>('get_torrents');
+    torrents.set(list);
   }
 
-  // Sample data store
-  const torrents = writable<Torrent[]>([
-    {
-      id: 1,
-      name: 'Ubuntu ISO',
-      progress: 54.3,
-      downloaded: '2.17 GB',
-      total: '4.00 GB',
-      peers: 64,
-      eta: 'N/A',
-      status: 'paused'
-    },
-    {
-      id: 2,
-      name: 'Fedora Live',
-      progress: 66.5,
-      downloaded: '2.62 GB',
-      total: '3.94 GB',
-      peers: 111,
-      eta: '17s',
-      status: 'downloading',
-      downSpeed: '60.1 MB/s'
-    }
-  ]);
+  onMount(() => {
+    loadTorrents();
+  });
 
   function togglePause(id: number) {
     torrents.update(list =>
