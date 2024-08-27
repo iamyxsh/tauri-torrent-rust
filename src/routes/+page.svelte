@@ -16,9 +16,9 @@
   export const torrents = writable<Torrent[]>([]);
 
   export async function loadTorrents() {
-    const list = await invoke<Torrent[]>('get_torrents');
+    const list: Torrent[] = await invoke('get_torrents');
 
-    torrents.set(list);
+    torrents.set(list as any);
   }
 
   onMount(() => {
@@ -28,13 +28,9 @@
   async function togglePause(id: number) {
     const torrent: Torrent = await invoke("get_torrent_by_id", {id});
 
-    console.log({torrent})
-
     if (torrent.status == 'paused') {
-      console.log({paused: "resume_torrent"})
       await invoke('resume_torrent', { id });
     } else {
-      console.log({paused: "pause_torrent"})
       await invoke('pause_torrent', { id });
     }
 
