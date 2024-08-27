@@ -47,7 +47,8 @@ pub fn run() {
             get_torrents,
             pause_torrent,
             resume_torrent,
-            get_torrent_by_id
+            get_torrent_by_id,
+            remove_torrent
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -82,4 +83,16 @@ async fn resume_torrent(state: State<'_, Mutex<AppState>>, id: u64) -> Result<()
 async fn get_torrent_by_id(state: State<'_, Mutex<AppState>>, id: u64) -> Result<Torrent, ()> {
     let torrents = state.lock().await.clone().torrents;
     Ok(torrents.iter().find(|t| t.id == id).unwrap().clone())
+}
+
+#[tauri::command]
+async fn remove_torrent(state: State<'_, Mutex<AppState>>, id: u64) -> Result<(), String> {
+    let mut app = state.lock().await;
+    let len_before = app.torrents.len();
+    app.torrents.retain(|t| t.id != id);
+    if app.torrents.len() < len_before {
+        Ok(())
+    } else {
+        Err(format!("No torrent found with id {}", id))
+    }
 }
