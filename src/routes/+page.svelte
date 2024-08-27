@@ -37,10 +37,10 @@
     await loadTorrents();
   }
 
-  function removeTorrent(id: number) {
-    if (confirm('Remove this torrent?')) {
-      torrents.update(list => list.filter(t => t.id !== id));
-    }
+  async function removeTorrent(id: number) {
+    await invoke('remove_torrent', { id });
+
+    await loadTorrents();
   }
 
   function addTorrent() {
