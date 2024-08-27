@@ -17,6 +17,7 @@
 
   export async function loadTorrents() {
     const list = await invoke<Torrent[]>('get_torrents');
+
     torrents.set(list);
   }
 
@@ -24,14 +25,20 @@
     loadTorrents();
   });
 
-  function togglePause(id: number) {
-    torrents.update(list =>
-      list.map(t =>
-        t.id === id
-          ? { ...t, status: t.status === 'paused' ? 'downloading' : 'paused' }
-          : t
-      )
-    );
+  async function togglePause(id: number) {
+    const torrent: Torrent = await invoke("get_torrent_by_id", {id});
+
+    console.log({torrent})
+
+    if (torrent.status == 'paused') {
+      console.log({paused: "resume_torrent"})
+      await invoke('resume_torrent', { id });
+    } else {
+      console.log({paused: "pause_torrent"})
+      await invoke('pause_torrent', { id });
+    }
+
+    await loadTorrents();
   }
 
   function removeTorrent(id: number) {
