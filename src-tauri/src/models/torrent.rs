@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub struct Torrent {
     pub id: u64,
     pub name: String,
+    pub magnet_uri: String,
     pub progress: f64,
     pub downloaded: String,
     pub total: String,

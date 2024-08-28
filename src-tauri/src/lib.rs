@@ -13,6 +13,7 @@ pub fn run() {
     let initial: TorrentsState = vec![
         Torrent {
             id: 1,
+            magnet_uri: "".to_string(),
             name: "Ubuntu ISO".into(),
             progress: 54.3,
             downloaded: "2.17 GB".into(),
@@ -26,6 +27,7 @@ pub fn run() {
         Torrent {
             id: 2,
             name: "Fedora Live".into(),
+            magnet_uri: "".to_string(),
             progress: 66.5,
             downloaded: "2.62 GB".into(),
             total: "3.94 GB".into(),
@@ -48,7 +50,8 @@ pub fn run() {
             pause_torrent,
             resume_torrent,
             get_torrent_by_id,
-            remove_torrent
+            remove_torrent,
+            add_torrent_from_magnet
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -95,4 +98,36 @@ async fn remove_torrent(state: State<'_, Mutex<AppState>>, id: u64) -> Result<()
     } else {
         Err(format!("No torrent found with id {}", id))
     }
+}
+
+#[tauri::command]
+async fn add_torrent_from_magnet(
+    state: State<'_, Mutex<AppState>>,
+    magnet: String,
+    name: String,
+) -> Result<Torrent, String> {
+    let mut app = state.lock().await;
+    let next_id = app
+        .torrents
+        .iter()
+        .map(|t| t.id)
+        .max()
+        .unwrap_or(0)
+        .checked_add(1)
+        .ok_or_else(|| "ID overflow".to_string())?;
+    let new = Torrent {
+        id: next_id,
+        name,
+        magnet_uri: magnet,
+        progress: 0.0,
+        downloaded: "0.00 GB".into(),
+        total: "Unknown".into(),
+        peers: 0,
+        eta: "N/A".into(),
+        status: TorrentStatus::Downloading,
+        down_speed: None,
+        up_speed: None,
+    };
+    app.torrents.push(new.clone());
+    Ok(new)
 }

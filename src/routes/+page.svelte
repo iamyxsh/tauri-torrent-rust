@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AddMangnetUri from './../components/AddMangnetUri.svelte';
   import { writable } from 'svelte/store';
   import {
     Play,
@@ -12,8 +13,10 @@
   } from 'lucide-svelte';
   import { invoke } from '@tauri-apps/api/core'
   import { onMount } from 'svelte'
+  import { createEventDispatcher } from 'svelte';
 
   export const torrents = writable<Torrent[]>([]);
+  let showModal = false;
 
   export async function loadTorrents() {
     const list: Torrent[] = await invoke('get_torrents');
@@ -43,13 +46,30 @@
     await loadTorrents();
   }
 
-  function addTorrent() {
-    alert('Add Torrent clicked');
+  async function addMagnet() {
+    const uri = prompt('Paste Magnet URI');
+    if (!uri) return;
+    try {
+      await invoke<Torrent>('add_torrent_from_magnet', { magnet: uri });
+      await loadTorrents();
+    } catch (e) {
+      console.error('Failed to add torrent:', e);
+      alert('Could not add torrent: ' + e);
+    }
   }
 
-  function uploadFile() {
-    alert('Upload File clicked');
+  async function handleAdd(e: CustomEvent<{ name: string; uri: string }>) {
+    const { name, uri } = e.detail;
+    try {
+      await invoke<Torrent>('add_torrent_from_magnet', { magnet: uri, name });
+      await loadTorrents();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to add torrent');
+    }
+    showModal = false;
   }
+
 </script>
 
 <main class="p-6 max-w-4xl mx-auto space-y-6">
@@ -57,19 +77,26 @@
     <h1 class="text-2xl font-bold">Torrent Client</h1>
     <div class="flex space-x-2">
       <button
-        on:click={addTorrent}
+        on:click={() => (showModal = true)}
         class="flex items-center px-4 py-2 bg-white border border-gray-200 rounded hover:bg-gray-50"
       >
         <Plus class="w-5 h-5 mr-2"/> Add Torrent
       </button>
       <button
-        on:click={uploadFile}
+        on:click={() => (showModal = true)}
         class="flex items-center px-4 py-2 bg-white border border-gray-200 rounded hover:bg-gray-50"
       >
         <UploadCloud class="w-5 h-5 mr-2"/> Upload File
       </button>
     </div>
   </div>
+
+  {#if showModal}
+    <AddMangnetUri
+      on:add={handleAdd}
+      on:cancel={() => (showModal = false)}
+    />
+  {/if}
 
   <div class="space-y-4">
     {#each $torrents as t (t.id)}
