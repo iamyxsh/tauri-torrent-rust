@@ -13,7 +13,6 @@
   } from 'lucide-svelte';
   import { invoke } from '@tauri-apps/api/core'
   import { onMount } from 'svelte'
-  import { createEventDispatcher } from 'svelte';
 
   export const torrents = writable<Torrent[]>([]);
   let showModal = false;
@@ -70,6 +69,11 @@
     showModal = false;
   }
 
+  async function addTorrentFile() {
+    await invoke<Torrent>('add_torrent_file');
+    await loadTorrents();
+  }
+
 </script>
 
 <main class="p-6 max-w-4xl mx-auto space-y-6">
@@ -83,7 +87,7 @@
         <Plus class="w-5 h-5 mr-2"/> Add Torrent
       </button>
       <button
-        on:click={() => (showModal = true)}
+        on:click={() => addTorrentFile()}
         class="flex items-center px-4 py-2 bg-white border border-gray-200 rounded hover:bg-gray-50"
       >
         <UploadCloud class="w-5 h-5 mr-2"/> Upload File
@@ -92,10 +96,10 @@
   </div>
 
   {#if showModal}
-    <AddMangnetUri
-      on:add={handleAdd}
-      on:cancel={() => (showModal = false)}
-    />
+      <AddMangnetUri
+        on:add={handleAdd}
+        on:cancel={() => (showModal = false)}
+      />
   {/if}
 
   <div class="space-y-4">

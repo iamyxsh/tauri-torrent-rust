@@ -6,7 +6,11 @@ use crate::models::{
     TorrentsState,
 };
 use crate::state::AppState;
-use tauri::{async_runtime::Mutex, Manager, State};
+use std::path::PathBuf;
+use tauri::Manager;
+use tauri::State;
+use tauri::{async_runtime::Mutex, AppHandle};
+use tauri_plugin_dialog::{DialogExt, FilePath};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -40,6 +44,7 @@ pub fn run() {
     ];
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             app.manage(Mutex::new(AppState { torrents: initial }));
@@ -51,7 +56,8 @@ pub fn run() {
             resume_torrent,
             get_torrent_by_id,
             remove_torrent,
-            add_torrent_from_magnet
+            add_torrent_from_magnet,
+            add_torrent_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -120,6 +126,58 @@ async fn add_torrent_from_magnet(
         name,
         magnet_uri: magnet,
         progress: 0.0,
+        downloaded: "0.00 GB".into(),
+        total: "Unknown".into(),
+        peers: 0,
+        eta: "N/A".into(),
+        status: TorrentStatus::Downloading,
+        down_speed: None,
+        up_speed: None,
+    };
+    app.torrents.push(new.clone());
+    Ok(new)
+}
+
+#[tauri::command]
+async fn add_torrent_file(
+    app: AppHandle,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<Torrent, String> {
+    let picked = app
+        .dialog()
+        .file()
+        .add_filter("Torrent Files", &["torrent"])
+        .blocking_pick_file();
+
+    let fp = picked.ok_or_else(|| "No file selected".to_string())?;
+
+    let path: PathBuf = match fp {
+        FilePath::Path(p) => p,
+        FilePath::Url(url) => url
+            .to_file_path()
+            .map_err(|_| "Could not convert URI to path".to_string())?,
+    };
+
+    let file_name = path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+
+    let mut app = state.lock().await;
+    let next_id = app
+        .torrents
+        .iter()
+        .map(|t| t.id)
+        .max()
+        .unwrap_or(0)
+        .saturating_add(1);
+
+    let new = Torrent {
+        id: next_id,
+        name: file_name,
+        progress: 0.0,
+        magnet_uri: "".to_string(),
         downloaded: "0.00 GB".into(),
         total: "Unknown".into(),
         peers: 0,
