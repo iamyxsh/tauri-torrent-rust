@@ -21,6 +21,7 @@
 
     <div class="space-y-4">
       <div>
+        <!-- svelte-ignore a11y_label_has_associated_control -->
         <label class="block text-sm font-medium mb-1">Name</label>
         <input
           type="text"
@@ -30,6 +31,7 @@
         />
       </div>
 
+      <!-- svelte-ignore a11y_label_has_associated_control -->
       <div>
         <label class="block text-sm font-medium mb-1">Magnet URI</label>
         <input
